@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 
+#include <txtview/fontset.hpp>
+
 namespace fs = std::filesystem;
 using namespace std::literals;
 
@@ -24,7 +26,40 @@ std::string_view ParseLongArgValue(std::string_view arg, std::string_view name) 
     return arg;
 }
 
-int main(int argc, char** argv)  {
+std::string_view SubstringAndStrim(std::string_view src, size_t begin, size_t end) {
+    while (begin <= end && std::isspace(src[begin]))
+        ++begin;
+    while (end >= begin && std::isspace(src[end]))
+        --end;
+    return src.substr(begin, end - begin);
+}
+
+void SubcommandResolveFont(std::string_view argFamilies, std::string_view argStyles) {
+    using namespace txtview;
+
+    std::vector<std::string> familyNames;
+    size_t lastElm = 0;
+    for (size_t i = 0; i < argFamilies.length(); ++i) {
+        if (argFamilies[i] == ',') {
+            familyNames.push_back(std::string(SubstringAndStrim(argFamilies, lastElm, i)));
+            lastElm = i + 1;
+        }
+    }
+    familyNames.push_back(std::string(SubstringAndStrim(argFamilies, lastElm, argFamilies.size())));
+
+    FaceDescription desc;
+    desc.familyNames = familyNames;
+
+    auto faces = GetCanonicalFontResolver().LocateMatchingFaces(desc);
+
+    printf("--x-resolve-font: querying %.*s\n", static_cast<int>(argFamilies.length()), argFamilies.data());
+    printf("--x-resolve-font: got %zu faces\n", faces.size());
+    for (const auto& face : faces) {
+        printf("\t%s\n", face.ToString().c_str());
+    }
+}
+
+int main(int argc, char** argv) {
     fs::path configFile;
     fs::path inputFile;
 
@@ -39,7 +74,17 @@ int main(int argc, char** argv)  {
         if (auto val = ParseLongArgValue(arg, "config"sv); !val.empty()) {
             configFile = fs::path(val);
         }
-        if (arg == "--"sv) {
+        if (arg == "--x-resolve-font") {
+            std::string_view familyNames(argv[i + 1]);
+            std::string_view styles(argv[i + 2]);
+            SubcommandResolveFont(familyNames, styles);
+            i += 2;
+            continue;
+        }
+        if (arg == "--x-exit") {
+            return 0;
+        }
+        if (arg == "--") {
             positionalOnly = true;
             continue;
         }

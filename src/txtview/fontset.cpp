@@ -3,14 +3,58 @@
 #include <txtview/utils.hpp>
 
 #if _WIN32
-#include "fontset-directwrite.inl"
+#    include "fontset-directwrite.inl"
 #elif __APPLE__
-#include "fontset-coretext.inl"
+#    include "fontset-coretext.inl"
 #elif __linux__
-#include "fontset-fontconfig.inl"
+#    include "fontset-fontconfig.inl"
 #endif
 
 namespace txtview {
+
+const char* StringifyFontStyle(FontStyle v) {
+    switch (v) {
+        using enum FontStyle;
+        case Normal: return "Normal";
+        case Oblique: return "Oblique";
+        case Italic: return "Italic";
+    };
+    return "";
+}
+
+const char* StringifyFontStretch(FontStretch v) {
+    switch (v) {
+        using enum FontStretch;
+        case UltraCondensed: return "UltraCondensed";
+        case ExtraCondensed: return "ExtraCondensed";
+        case Condensed: return "Condensed";
+        case SemiCondensed: return "SemiCondensed";
+        case Normal: return "Normal";
+        case SemiExpanded: return "SemiExpanded";
+        case Expanded: return "Expanded";
+        case ExtraExpanded: return "ExtraExpanded";
+        case UltraExpanded: return "UltraExpanded";
+    };
+    return "";
+}
+
+const char* StringifyFontWeight(FontWeight v) {
+    switch (v) {
+        using enum FontWeight;
+        case Thin: return "Thin";
+        case ExtraLight: return "ExtraLight";
+        case Light: return "Light";
+        case SemiLight: return "SemiLight";
+        case Normal: return "Normal";
+        case Medium: return "Medium";
+        case SemiBold: return "SemiBold";
+        case Bold: return "Bold";
+        case ExtraBold: return "ExtraBold";
+        case Black: return "Black";
+        case ExtraBlack: return "ExtraBlack";
+    };
+    return "";
+}
 
 int GetFontWeightConventionValue(FontWeight v) {
     switch (v) {
@@ -31,7 +75,12 @@ int GetFontWeightConventionValue(FontWeight v) {
     std::terminate();
 }
 
-FontSet TypefaceStore::SolidifyFaces(const FaceSet &faces) {
+std::string UnloadedFace::ToString() const {
+    return std::format("{} style={}, stretch={}, weight={}, ttcIndex={}",
+        file.string(), StringifyFontStyle(style), StringifyFontStretch(stretch), StringifyFontWeight(weight), ttcIndex);
+}
+
+FontSet TypefaceStore::SolidifyFaces(const FaceSet& faces) {
     FontSet result;
     // TODO
     return result;
@@ -40,21 +89,21 @@ FontSet TypefaceStore::SolidifyFaces(const FaceSet &faces) {
 FaceSet TypefaceStore::AddFaces(std::span<const UnloadedFace> faces) {
 #if _WIN32
     using PathCStr = const wchar_t*;
-#define GET_PATH_CSTR(p) p.string().c_str()
+#    define GET_PATH_CSTR(p) p.string().c_str()
 #else
     using PathCStr = const char*;
-#define GET_PATH_CSTR(p) p.c_str()
+#    define GET_PATH_CSTR(p) p.c_str()
 #endif
 
     FaceSet result;
-    HashMap<PathCStr, hb_blob_t*> blobs;
+    std::unordered_map<PathCStr, hb_blob_t*> blobs;
     auto findOrLoadBlob = [&](const fs::path& file) {
         PathCStr key = GET_PATH_CSTR(file);
 
         if (auto iter = blobs.find(key); iter != blobs.end())
             return iter->second;
 
-        auto [iter, _] = blobs.try_emplace(key, hb_blob_create_from_file(key));        
+        auto [iter, _] = blobs.try_emplace(key, hb_blob_create_from_file(key));
         return iter->second;
     };
 
@@ -83,7 +132,7 @@ IFontResolver& GetCanonicalFontResolver() {
 #elif __linux__
         = std::make_unique<FontConfigResolver>();
 #else
-#error "Platform not supported"
+#    error "Platform not supported"
 #endif
     return *instance;
 }

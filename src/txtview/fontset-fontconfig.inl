@@ -1,12 +1,13 @@
 #include "fontset.hpp"
 
+#include <txtview/config.h>
+
 #include <fontconfig/fontconfig.h>
 
 namespace fs = std::filesystem;
 
 namespace txtview {
 
-namespace conv {
 int FcFromStyle(FontStyle v) {
     switch (v) {
         using enum FontStyle;
@@ -100,7 +101,18 @@ FontWeight FcToWeight(int v) {
     std::fputs("Error: invalid enum value", stderr);
     std::terminate();
 }
-} // namespace conv
+
+const char* StringifyFcSlant(int v) {
+    return StringifyFontStyle(FcToStyle(v));
+}
+
+const char* StringifyFcWidth(int v) {
+    return StringifyFontStretch(FcToStretch(v));
+}
+
+const char* StringifyFcWeight(int v) {
+    return StringifyFontWeight(FcToWeight(v));
+}
 
 class FontConfigResolver : public IFontResolver {
 private:
@@ -116,14 +128,27 @@ public:
         FcFini();
     }
 
-    std::vector<UnloadedFace> LocateMatchingFonts(const FontDescription& desc) override {
+    std::vector<UnloadedFace> LocateMatchingFaces(const FaceDescription& desc) override {
+#ifdef TXTVIEW_DEBUG_FONTCONFIG
+        std::fputs("querying: ", stdout);
+        for (size_t i = 0; i < desc.familyNames.size(); i++) {
+            std::fputs(desc.familyNames[i].c_str(), stdout);
+            bool isLast = i + 1 == desc.familyNames.size();
+            if (!isLast)
+                std::fputs(", ", stdout);
+        }
+        std::fputs("\n", stdout);
+        std::printf("          style=%s, stretch=%s, weight=%s\n",
+            StringifyFontStyle(desc.style), StringifyFontStretch(desc.stretch), StringifyFontWeight(desc.weight));
+#endif
+
         FcPattern* pattern = FcPatternCreate();
 
         FcPatternAddBool(pattern, FC_OUTLINE, true);
         FcPatternAddBool(pattern, FC_SCALABLE, true);
-        FcPatternAddInteger(pattern, FC_SLANT, conv::FcFromStyle(desc.style));
-        FcPatternAddInteger(pattern, FC_WIDTH, conv::FcFromStretch(desc.stretch));
-        FcPatternAddInteger(pattern, FC_WEIGHT, conv::FcFromWeight(desc.weight));
+        FcPatternAddInteger(pattern, FC_SLANT, FcFromStyle(desc.style));
+        FcPatternAddInteger(pattern, FC_WIDTH, FcFromStretch(desc.stretch));
+        FcPatternAddInteger(pattern, FC_WEIGHT, FcFromWeight(desc.weight));
         for (const auto& familyName : desc.familyNames) {
             auto cstr = reinterpret_cast<const FcChar8*>(familyName.c_str());
             FcPatternAddString(pattern, FC_FAMILY, cstr);
@@ -136,40 +161,50 @@ public:
 
         FcResult fcRes;
         FcFontSet* fontSet = FcFontSort(mFcConf, pattern, FcTrue, nullptr, &fcRes);
-        if (fcRes == FcResultMatch) {
-            for (int i = 0; i < fontSet->nfont; ++i) {
-                FcPattern* font = fontSet->fonts[i];
+        if (fcRes != FcResultMatch)
+            goto fail;
 
-                FcChar8* fontFileCstr = nullptr;
-                if (FcPatternGetString(font, FC_FILE, 0, &fontFileCstr) != FcResultMatch)
-                    continue;
+        for (int i = 0; i < fontSet->nfont; ++i) {
+            FcPattern* font = fontSet->fonts[i];
 
-                int fcSlant = FC_SLANT_ROMAN;
-                int fcWidth = FC_WIDTH_NORMAL;
-                int fcWeight = FC_WEIGHT_NORMAL;
-                int ttc = -1;
-                // TODO check for errors
-                FcPatternGetInteger(font, FC_SLANT, 0, &fcSlant);
-                FcPatternGetInteger(font, FC_WIDTH, 0, &fcWidth);
-                FcPatternGetInteger(font, FC_WEIGHT, 0, &fcWeight);
-                FcPatternGetInteger(font, FC_INDEX, 0, &ttc);
+            FcChar8* fontFileCstr = nullptr;
+            if (FcPatternGetString(font, FC_FILE, 0, &fontFileCstr) != FcResultMatch)
+                continue;
 
-                result.push_back(UnloadedFace{
-                    .file = fs::path(reinterpret_cast<const char*>(fontFileCstr)),
-                    .style = conv::FcToStyle(fcSlant),
-                    .stretch = conv::FcToStretch(fcWidth),
-                    .weight = conv::FcToWeight(fcWeight),
-                    .ttcIndex = ttc,
-                });
-            }
+            int fcSlant = FC_SLANT_ROMAN;
+            int fcWidth = FC_WIDTH_NORMAL;
+            int fcWeight = FC_WEIGHT_NORMAL;
+            int ttc = -1;
+
+            int tmp;
+            if (FcPatternGetInteger(font, FC_SLANT, 0, &tmp) == FcResultMatch) fcSlant = tmp;
+            if (FcPatternGetInteger(font, FC_WIDTH, 0, &tmp) == FcResultMatch) fcWidth = tmp;
+            if (FcPatternGetInteger(font, FC_WEIGHT, 0, &tmp) == FcResultMatch) fcWeight = tmp;
+            if (FcPatternGetInteger(font, FC_INDEX, 0, &tmp) == FcResultMatch) ttc = tmp;
+
+#ifdef TXTVIEW_DEBUG_FONTCONFIG
+            FcChar8* name;
+            FcPatternGetString(font, FC_FAMILY, 0, &name);
+            std::printf("got font: %s '%s', slant=%s, width=%s, weight=%s, ttcIdx=%d\n",
+                fontFileCstr, name, StringifyFcSlant(fcSlant), StringifyFcWidth(fcWidth), StringifyFcWeight(fcWeight), ttc);
+#endif
+
+            result.push_back(UnloadedFace{
+                .file = fs::path(reinterpret_cast<const char*>(fontFileCstr)),
+                .style = FcToStyle(fcSlant),
+                .stretch = FcToStretch(fcWidth),
+                .weight = FcToWeight(fcWeight),
+                .ttcIndex = ttc,
+            });
         }
 
+    fail:
         FcFontSetDestroy(fontSet);
         FcPatternDestroy(pattern);
         return result;
     }
 
-    std::vector<UnloadedFace> LocateAllFonts() override {
+    std::vector<UnloadedFace> LocateAllFaces() override {
         std::vector<UnloadedFace> result;
         // TODO
         return result;

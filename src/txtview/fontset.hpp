@@ -21,7 +21,6 @@ struct FaceSet;
 struct FontSet;
 struct TypefaceStore;
 
-
 enum class FontStyle : uint8_t {
     Normal,
     Oblique,
@@ -53,14 +52,11 @@ enum class FontWeight : uint8_t {
     Black,
     ExtraBlack,
 };
-int GetFontWeightConventionValue(FontWeight);
 
-struct FontDescription {
-    std::span<const std::string> familyNames;
-    FontStyle style = FontStyle::Normal;
-    FontStretch stretch = FontStretch::Normal;
-    FontWeight weight = FontWeight::Normal;
-};
+const char* StringifyFontStyle(FontStyle v);
+const char* StringifyFontStretch(FontStretch v);
+const char* StringifyFontWeight(FontWeight v);
+int GetFontWeightConventionValue(FontWeight);
 
 /* Note we use harfbuzz terminology here:
 
@@ -78,6 +74,8 @@ struct UnloadedFace {
     FontStretch stretch = FontStretch::Normal;
     FontWeight weight = FontWeight::Normal;
     int ttcIndex = -1;
+
+    std::string ToString() const;
 };
 
 /// "_Re_sident_Fa_ce _I_ndex"
@@ -98,7 +96,6 @@ struct ResidentFont {
     FontSize size;
 };
 
-
 struct FaceSet {
     std::vector<ReFaIndex> elements;
 };
@@ -116,12 +113,18 @@ struct TypefaceStore {
     FaceSet AddFaces(std::span<const UnloadedFace> faces);
 };
 
+struct FaceDescription {
+    std::span<const std::string> familyNames;
+    FontStyle style = FontStyle::Normal;
+    FontStretch stretch = FontStretch::Normal;
+    FontWeight weight = FontWeight::Normal;
+};
 
 class IFontResolver {
 public:
     ~IFontResolver() = default;
-    virtual std::vector<UnloadedFace> LocateMatchingFonts(const FontDescription& desc) = 0;
-    virtual std::vector<UnloadedFace> LocateAllFonts() = 0;
+    virtual std::vector<UnloadedFace> LocateMatchingFaces(const FaceDescription& desc) = 0;
+    virtual std::vector<UnloadedFace> LocateAllFaces() = 0;
 };
 
 IFontResolver& GetCanonicalFontResolver();
