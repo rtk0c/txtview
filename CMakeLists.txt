@@ -13,7 +13,6 @@ file(GLOB_RECURSE txtview_SRC_FILES
 )
 add_executable(txtview ${txtview_SRC_FILES})
 
-target_compile_features(txtview PRIVATE cxx_std_23)
 target_include_directories(txtview PRIVATE src)
 target_precompile_headers(txtview
 PRIVATE
@@ -41,4 +40,11 @@ PRIVATE
     harfbuzz::harfbuzz
     ${SDL2_LIBRARIES}
     tomlplusplus::tomlplusplus
+)
+
+set_target_properties(
+    txtview
+PROPERTIES
+    CXX_STANDARD 23
+    CXX_EXTENSIONS OFF
 )
