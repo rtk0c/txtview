@@ -125,21 +125,6 @@ public:
         FcPatternAddInteger(pattern, FC_WIDTH, conv::FcFromStretch(desc.stretch));
         FcPatternAddInteger(pattern, FC_WEIGHT, conv::FcFromWeight(desc.weight));
         for (const auto& familyName : desc.familyNames) {
-            // TODO generalize this as our own family name substitution system
-            // https://github.com/contour-terminal/contour/blob/2c7719e304c5ddac39c5f05d93d0bdbc54cffece/src/text_shaper/fontconfig_locator.cpp#L177-L188
-#if _WIN32
-            // On Windows FontConfig can't find "monospace". We need to use "Consolas" instead.
-            if (familyName == "monospace") {
-                FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8*>("Consolas"));
-                continue;
-            }
-#elif __APPLE__
-            // Same for macOS, we use "Menlo" for "monospace".
-            if (familyName == "monospace") {
-                FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8*>("Menlo"));
-                continue;
-            }
-#endif
             auto cstr = reinterpret_cast<const FcChar8*>(familyName.c_str());
             FcPatternAddString(pattern, FC_FAMILY, cstr);
         }
