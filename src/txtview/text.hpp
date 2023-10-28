@@ -1,29 +1,35 @@
 #pragma once
 
-#include "fontset.hpp"
+#include <txtview/fontset.hpp>
 
 namespace txtview {
 
 struct TextSection {
-	size_t srcBegin;
-	size_t srcEnd;
-	uint32_t childCount;
+    uint32_t srcBegin;
+    uint32_t srcEnd;
+    // If >0, indicates the child count
+    // If ==-1, indicates that the subtree is trimmed
+    int32_t childCount;
 };
 
 struct TextDocument {
-	std::vector<TextSection> sections;
+    std::vector<TextSection> sections;
 };
 
-using GlyphIndex = size_t;
+using Codepoint = uint32_t;
+using GlyphIndex = uint32_t;
 
-struct Glyph {
-	GlyphIndex idx;
+struct GlyphCacheKey {
+    ReFaIndex font;
+    FontSize size;
+    Codepoint codepoint;
+
+    size_t HashCode() const;
+    bool operator<=>(const GlyphCacheKey&) const = default;
 };
 
-struct RenderData {
-	std::vector<SDL_Vertex> vertices;
+struct GlyphCacheValue {
+    GlyphIndex idx;
 };
-
-void GenerateRenderData(RenderData& rd, std::span<const > text);
 
 } // namespace txtview

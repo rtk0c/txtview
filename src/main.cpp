@@ -15,11 +15,13 @@ std::string_view ParseLongArgValue(std::string_view arg, std::string_view name) 
         return {};
     if (arg[0] != '-' || arg[1] != '-')
         return {};
-    if (!arg.remove_prefix(2).starts_with(name))
+    arg.remove_prefix(2);
+    if (!arg.starts_with(name))
         return {};
     if (arg[prefixLen - 1] != '=')
         return {};
-    return arg.remove_prefix(prefixLen);
+    arg.remove_prefix(prefixLen);
+    return arg;
 }
 
 int main(int argc, char** argv)  {
@@ -34,7 +36,7 @@ int main(int argc, char** argv)  {
         if (positionalOnly)
             goto handlePositionalArg;
 
-        if (auto val = ParseLongArgValue("config"sv); !val.empty()) {
+        if (auto val = ParseLongArgValue(arg, "config"sv); !val.empty()) {
             configFile = fs::path(val);
         }
         if (arg == "--"sv) {
