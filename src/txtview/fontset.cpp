@@ -4,9 +4,11 @@
 
 #if _WIN32
 #    include "fontset-directwrite.inl"
-#elif __APPLE__
+#endif
+#if __APPLE__
 #    include "fontset-coretext.inl"
-#elif __linux__
+#endif
+#if __linux__
 #    include "fontset-fontconfig.inl"
 #endif
 
@@ -87,22 +89,20 @@ FontSet TypefaceStore::SolidifyFaces(const FaceSet& faces) {
 }
 
 FaceSet TypefaceStore::AddFaces(std::span<const UnloadedFace> faces) {
-#if _WIN32
-    using PathCStr = const wchar_t*;
-#    define GET_PATH_CSTR(p) p.string().c_str()
-#else
-    using PathCStr = const char*;
-#    define GET_PATH_CSTR(p) p.c_str()
-#endif
-
     FaceSet result;
-    std::unordered_map<PathCStr, hb_blob_t*> blobs;
-    auto findOrLoadBlob = [&](const fs::path& file) {
-        PathCStr key = GET_PATH_CSTR(file);
+    std::unordered_map<const typename fs::path::value_type*, hb_blob_t*> blobs;
+    auto findOrLoadBlob = [&](const fs::path& path) {
+        auto key = path.c_str();
 
         if (auto iter = blobs.find(key); iter != blobs.end())
             return iter->second;
 
+#if _WIN32
+        auto pathStr = path.string();
+        auto utf8path = pathStr.c_str();
+#else
+        auto utf8path = path.c_str();
+#endif
         auto [iter, _] = blobs.try_emplace(key, hb_blob_create_from_file(key));
         return iter->second;
     };
