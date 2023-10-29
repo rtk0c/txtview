@@ -18,3 +18,6 @@ struct MemberHash {
 // TODO consider switching to boost::unordered_flat_map? or ankerl::unordered_dense::?
 template <typename Key, typename Value>
 using HashMap = std::unordered_map<Key, Value, MemberHash<Key>>;
+
+template <typename T>
+using ScopedPtr = std::unique_ptr<T, void(*)(T*)>;

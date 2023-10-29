@@ -1,10 +1,12 @@
 #include "fontset.hpp"
 
 #include <txtview/config.h>
+#include <txtview/utils.hpp>
 
 #include <fontconfig/fontconfig.h>
 
 namespace fs = std::filesystem;
+using namespace std::literals;
 
 namespace txtview {
 
@@ -117,6 +119,8 @@ const char* StringifyFcWeight(int v) {
 class FontConfigResolver : public IFontResolver {
 private:
     FcConfig* mFcConf;
+    UnloadedFace* mExclusionList = nullptr;
+    int mExclusionCount = 0;
 
 public:
     FontConfigResolver() {
@@ -128,7 +132,41 @@ public:
         FcFini();
     }
 
-    std::vector<UnloadedFace> LocateMatchingFaces(const FaceDescription& desc) override {
+    void ComputeExclusionList() {
+        std::vector<std::string> family1{ "sans-serif"s };
+        std::vector<std::string> family2{ "serif"s };
+        auto set1 = ComputeMatchingFaces({ .familyNames = family1 }, nullptr, 0);
+        auto set2 = ComputeMatchingFaces({ .familyNames = family2 }, nullptr, 0);
+
+        auto it1 = set1.rbegin();
+        auto it2 = set2.rbegin();
+        while (it1 != set1.rend() && it2 != set2.rend()) {
+            if (it1->file != it2->file)
+                break;
+            ++it1;
+            ++it2;
+        }
+
+        size_t tailLen1 = std::distance(set1.rbegin(), it1) + 1;
+        // Must be the same, no need to check
+        // size_t tailLen2 = std::distance(set2.rbegin(), it2) + 1;
+
+        mExclusionList = new UnloadedFace[tailLen1];
+        mExclusionCount = tailLen1;
+
+        for (int i = 0; i < tailLen1; ++i) {
+            mExclusionList[i] = std::move(*(it1 - i));
+        }
+
+#ifdef TXTVIEW_DEBUG_FONTCONFIG
+        printf("exclusion list:\n");
+        for (int i = 0; i < mExclusionCount; ++i) {
+            printf("  %s\n", mExclusionList[i].file.c_str());
+        }
+#endif
+    }
+
+    std::vector<UnloadedFace> ComputeMatchingFaces(const FaceDescription& desc, const UnloadedFace* exclusionList, int exclusionCount) {
 #ifdef TXTVIEW_DEBUG_FONTCONFIG
         std::fputs("querying: ", stdout);
         for (size_t i = 0; i < desc.familyNames.size(); i++) {
@@ -142,29 +180,48 @@ public:
             StringifyFontStyle(desc.style), StringifyFontStretch(desc.stretch), StringifyFontWeight(desc.weight));
 #endif
 
-        FcPattern* pattern = FcPatternCreate();
+        ScopedPtr<FcPattern> pattern(FcPatternCreate(), FcPatternDestroy);
 
-        FcPatternAddBool(pattern, FC_OUTLINE, true);
-        FcPatternAddBool(pattern, FC_SCALABLE, true);
-        FcPatternAddInteger(pattern, FC_SLANT, FcFromStyle(desc.style));
-        FcPatternAddInteger(pattern, FC_WIDTH, FcFromStretch(desc.stretch));
-        FcPatternAddInteger(pattern, FC_WEIGHT, FcFromWeight(desc.weight));
+        FcPatternAddBool(pattern.get(), FC_OUTLINE, true);
+        FcPatternAddBool(pattern.get(), FC_SCALABLE, true);
+        FcPatternAddInteger(pattern.get(), FC_SLANT, FcFromStyle(desc.style));
+        FcPatternAddInteger(pattern.get(), FC_WIDTH, FcFromStretch(desc.stretch));
+        FcPatternAddInteger(pattern.get(), FC_WEIGHT, FcFromWeight(desc.weight));
         for (const auto& familyName : desc.familyNames) {
             auto cstr = reinterpret_cast<const FcChar8*>(familyName.c_str());
-            FcPatternAddString(pattern, FC_FAMILY, cstr);
+            FcPatternAddString(pattern.get(), FC_FAMILY, cstr);
         }
 
-        FcConfigSubstitute(mFcConf, pattern, FcMatchPattern);
-        FcDefaultSubstitute(pattern);
+        FcConfigSubstitute(mFcConf, pattern.get(), FcMatchPattern);
+        FcDefaultSubstitute(pattern.get());
 
         std::vector<UnloadedFace> result;
 
         FcResult fcRes;
-        FcFontSet* fontSet = FcFontSort(mFcConf, pattern, FcTrue, nullptr, &fcRes);
+        ScopedPtr<FcFontSet> fontSet(FcFontSort(mFcConf, pattern.get(), FcTrue, nullptr, &fcRes), FcFontSetDestroy);
         if (fcRes != FcResultMatch)
-            goto fail;
+            return result;
 
-        for (int i = 0; i < fontSet->nfont; ++i) {
+        int usefulFontsCnt = fontSet->nfont;
+        for (int i = 1; i <= exclusionCount; ++i) {
+            auto excludedPath = exclusionList[exclusionCount - i].file.c_str();
+
+            int fontSetIdx = fontSet->nfont - i;
+            if (fontSetIdx < 0)
+                // This really shouldn't happen logically, but if it somehow does, let's not read into uninitialized memory
+                break;
+            FcChar8* filePath;
+            FcPatternGetString(fontSet->fonts[fontSetIdx], FC_FILE, 0, &filePath);
+
+            if (strcmp(reinterpret_cast<const char*>(filePath), excludedPath) != 0)
+                break;
+#ifdef TXTVIEW_DEBUG_FONTCONFIG
+            printf("ignoring font %s\n", excludedPath);
+#endif
+            --usefulFontsCnt;
+        }
+
+        for (int i = 0; i < usefulFontsCnt; ++i) {
             FcPattern* font = fontSet->fonts[i];
 
             FcChar8* fontFileCstr = nullptr;
@@ -198,10 +255,15 @@ public:
             });
         }
 
-    fail:
-        FcFontSetDestroy(fontSet);
-        FcPatternDestroy(pattern);
         return result;
+    }
+
+    std::vector<UnloadedFace> LocateMatchingFaces(const FaceDescription& desc) override {
+#ifdef TXTVIEW_FONTCONFIG_DEFAULT_EXCLUSIONS
+        if (mExclusionList == nullptr)
+            ComputeExclusionList();
+#endif
+        return ComputeMatchingFaces(desc, mExclusionList, mExclusionCount);
     }
 
     std::vector<UnloadedFace> LocateAllFaces() override {
