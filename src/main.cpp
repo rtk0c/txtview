@@ -1,15 +1,11 @@
 #include <SDL2/SDL.h>
 
+#include <txtview/file.hpp>
 #include <txtview/fontset.hpp>
+#include <txtview/text.hpp>
 
 namespace fs = std::filesystem;
 using namespace std::literals;
-
-struct OutputDrawList {
-};
-
-void PaintDrawList(SDL_Renderer* renderer, const OutputDrawList& drawList) {
-}
 
 std::string_view ParseLongArgValue(std::string_view arg, std::string_view name) {
     size_t prefixLen = 2 /*--*/ + name.length() + 1 /*=*/;
@@ -60,8 +56,8 @@ void SubcommandResolveFont(std::string_view argFamilies, std::string_view argSty
 }
 
 int main(int argc, char** argv) {
-    fs::path configFile;
-    fs::path inputFile;
+    fs::path configPath;
+    fs::path inputPath;
 
     int nthPositionalArg = 0;
     bool positionalOnly = false;
@@ -72,7 +68,7 @@ int main(int argc, char** argv) {
             goto handlePositionalArg;
 
         if (auto val = ParseLongArgValue(arg, "config"sv); !val.empty()) {
-            configFile = fs::path(val);
+            configPath = fs::path(val);
         }
         if (arg == "--x-resolve-font") {
             std::string_view familyNames(argv[i + 1]);
@@ -92,12 +88,37 @@ int main(int argc, char** argv) {
     handlePositionalArg:
         switch (nthPositionalArg++) {
             case 0:
-                inputFile = fs::path(arg);
+                inputPath = fs::path(arg);
                 break;
             default:
                 fputs(std::format("Unexpected positional argument '{}'\n", arg).c_str(), stderr);
                 return -1;
         }
+    }
+
+    txtview::TypefaceLibrary libTypeface;
+    txtview::TextLibrary libText(libTypeface);
+    txtview::File inputFile(inputPath);
+    txtview::TextDocument doc(inputFile);
+
+    struct ProcessedParagraph {
+        txtview::ItemizedParagraph itemization;
+        txtview::ShapedParagraph shaping;
+    };
+    std::vector<ProcessedParagraph> paragraphs;
+    txtview::Canvas canvas;
+
+    float currX = 0.0f;
+    float currY = 0.0f;
+    float pageWidth = 100.0f;
+
+    paragraphs.resize(doc.paragraphs.size());
+    for (size_t i = 0; i < paragraphs.size(); ++i) {
+        auto& text = doc.paragraphs[i];
+        auto& proc = paragraphs[i];
+        txtview::PlacementResult res;
+        libText.ItemizeAndShape(text, proc.itemization, proc.shaping);
+        libText.PlaceShapedParagraph(canvas, proc.shaping, &res, currX, currY, pageWidth, 0.0f);
     }
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -118,15 +139,18 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    OutputDrawList drawList;
-
+    int windowWidth, windowHeight;
     bool quit = false;
-    bool refreshDisplay = false;
+    bool refreshDisplay = true;
     while (!quit) {
+        // TODO fetch multiple events at once, when such is available?
         SDL_Event event;
         SDL_WaitEvent(&event);
 
         switch (event.type) {
+            case SDL_WINDOWEVENT_RESIZED:
+                SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+                break;
             case SDL_QUIT:
                 quit = true;
                 break;
@@ -135,7 +159,7 @@ int main(int argc, char** argv) {
         if (refreshDisplay) {
             SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
             SDL_RenderClear(renderer);
-            PaintDrawList(renderer, drawList);
+            // TODO
             SDL_RenderPresent(renderer);
             refreshDisplay = false;
         }

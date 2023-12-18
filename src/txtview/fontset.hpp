@@ -19,7 +19,7 @@ Here we also deviate from the the harfbuzz terminology, where `TypefaceStore` do
 
 struct FaceSet;
 struct FontSet;
-struct TypefaceStore;
+struct TypefaceLibrary;
 
 enum class FontStyle : uint8_t {
     Normal,
@@ -93,6 +93,7 @@ struct ResidentFont {
     // Note the misnomer here, we call it a "font" to follow harfbuzz's terminology
     FT_Face* fbFont;
     ReFaIndex prototypeId;
+    ReFoIndex index = -1;
     FontSize size;
 };
 
@@ -104,12 +105,16 @@ struct FontSet {
     std::vector<ReFoIndex> elements;
 };
 
-struct TypefaceStore {
-    /// Constraint: fonts[i].index == i
+struct TypefaceLibrary {
+    /// Constraint: universe[i].index == i
     std::vector<ResidentFace> universe;
+    /// Constraint: fonts[i].index == i
     std::vector<ResidentFont> fonts;
 
-    FontSet SolidifyFaces(const FaceSet& faces);
+    ResidentFont& GetFont(ReFoIndex fontId);
+    ResidentFace& GetFace(ReFaIndex faceId);
+
+    FontSet AddFonts(const FaceSet& faces, FontSize size);
     FaceSet AddFaces(std::span<const UnloadedFace> faces);
 };
 

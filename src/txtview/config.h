@@ -7,3 +7,6 @@
 //#define TXTVIEW_FONTCONFIG_DEFAULT_EXCLUSIONS
 /// Turn on debug logging
 //#define TXTVIEW_DEBUG_FONTCONFIG
+
+/********* text.cpp *********/
+#define TXTVIEW_TEXT_DOCUMENT_DEBUG

@@ -82,13 +82,21 @@ std::string UnloadedFace::ToString() const {
         file.string(), StringifyFontStyle(style), StringifyFontStretch(stretch), StringifyFontWeight(weight), ttcIndex);
 }
 
-FontSet TypefaceStore::SolidifyFaces(const FaceSet& faces) {
+ResidentFont& TypefaceLibrary::GetFont(ReFoIndex fontId) {
+    // TODO
+}
+
+ResidentFace& TypefaceLibrary::GetFace(ReFaIndex faceId) {
+    // TODO
+}
+
+FontSet TypefaceLibrary::AddFonts(const FaceSet& faces, FontSize size) {
     FontSet result;
     // TODO
     return result;
 }
 
-FaceSet TypefaceStore::AddFaces(std::span<const UnloadedFace> faces) {
+FaceSet TypefaceLibrary::AddFaces(std::span<const UnloadedFace> faces) {
     FaceSet result;
     std::unordered_map<const typename fs::path::value_type*, hb_blob_t*> blobs;
     auto findOrLoadBlob = [&](const fs::path& path) {
