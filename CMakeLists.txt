@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(txtview LANGUAGES C CXX)
+project(txtview LANGUAGES CXX)
 
 find_package(cppfront REQUIRED)
 find_package(Fontconfig REQUIRED)

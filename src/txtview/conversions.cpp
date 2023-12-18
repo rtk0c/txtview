@@ -1,6 +1,6 @@
 #include "conversions.h"
 
-#include <assert.h>
+#include <cassert>
 
 uint8_t HbScriptCompress(hb_script_t script) {
     switch (script) {
@@ -173,8 +173,7 @@ uint8_t HbScriptCompress(hb_script_t script) {
 
         case _HB_SCRIPT_MAX_VALUE: break;
     }
-    fputs("Error: invalid enum value", stderr);
-    abort();
+    assert(false && "HbScriptCompress(): nvalid enum value");
 }
 
 static const hb_script_t kHbScriptUncompressLut[] = {
@@ -215,9 +214,9 @@ hb_script_t HbScriptUncompress(uint8_t script) {
 
 uint8_t HbDirectionCompress(hb_direction_t dir) {
     assert(dir >= 0 && dir <= 0b111);
-    return (uint8_t)dir;
+    return static_cast<uint8_t>(dir);
 }
 
 hb_direction_t HbDirectionUncompress(uint8_t dir) {
-    return (hb_direction_t)dir;
+    return static_cast<hb_direction_t>(dir);
 }
