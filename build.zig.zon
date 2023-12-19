@@ -1,0 +1,17 @@
+.{
+    .name = "txtview",
+    .version = "0.0.0",
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+        "LICENSE",
+        "README.md",
+    },
+    .dependencies = .{
+        .mach_freetype = .{
+            .url = "https://github.com/hexops/mach-freetype/archive/90b353a9425067010ae5e924dc845e5e5045dab7.tar.gz",
+            .hash = "12203119a393e11b68b4e1de502ffe21c0b5d9f036707934d8fefd21a3e040794851"
+        },
+    },
+}
