@@ -1,6 +1,8 @@
 #pragma once
 #include "text.hpp"
 
+#include <txtview/utils.hpp>
+
 #include <SDL2/SDL.h>
 
 namespace txtview {
@@ -10,35 +12,34 @@ struct GlyphAtlas {
 };
 
 struct GlyphCacheKey {
-    ReFaIndex font;
-    FontSize size;
-    Codepoint codepoint;
+    ReFoIndex fontId;
+    GlyphIndex glyphIndex;
 
     size_t HashCode() const;
     bool operator==(const GlyphCacheKey&) const = default;
 };
 
-struct GlyphCacheValue {
+struct CachedGlyph {
     uint32_t atlasId;
+    // Size (in pixels) of this glyph
+    int width, height;
     // Texture coordinates in the atlas
     float u0, v0;
     float u1, v1;
 };
 
-struct GlyphCache {
-    std::vector<GlyphAtlas> atlases;
-    std::unordered_map<GlyphCacheKey, GlyphCacheValue> cache;
-};
-
-struct TextLibrary::Private {
+struct LayoutCache::Private {
+    std::vector<GlyphAtlas> glyphAtlases;
+    HashMap<GlyphCacheKey, CachedGlyph> glyphLut;
     TypefaceLibrary* typefaceLibrary;
     // The common, reused buffer for all shaping operations
     // N.B. we assume an object TextLibrary is only used from one thread ever
     hb_buffer_t* hbBuffer;
-    GlyphCache fontCache;
 
     explicit Private(TypefaceLibrary& typefaceLib);
     ~Private();
+
+    const CachedGlyph& GetOrMakeGlyph(GlyphCacheKey key);
 };
 
 } // namespace txtview

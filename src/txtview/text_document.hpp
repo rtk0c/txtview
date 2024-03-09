@@ -1,7 +1,8 @@
 #pragma once
 
-#include <txtview/fontset.hpp>
 #include <txtview/file.hpp>
+#include <txtview/fontset.hpp>
+#include <txtview/measurement.hpp>
 
 namespace txtview {
 
@@ -21,9 +22,9 @@ struct TextFormatting {
 };
 
 struct TextParagraph {
-    const char* string;
-    uint32_t begin;
-    uint32_t end;
+    const char* string = nullptr;
+    uint32_t begin = 0;
+    uint32_t end = 0;
     TextFormatting formatting;
     Length indent;
 };

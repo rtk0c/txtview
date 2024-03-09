@@ -1,10 +1,11 @@
 #pragma once
 
-#include <freetype/freetype.h>
 #include <harfbuzz/hb.h>
-
 #include <filesystem>
 #include <span>
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 namespace txtview {
 
@@ -84,17 +85,17 @@ using ReFaIndex = int;
 using ReFoIndex = int;
 
 struct ResidentFace {
-    hb_face_t* hbFace;
+    hb_face_t* hbFace = nullptr;
     ReFaIndex index = -1;
 };
 
 struct ResidentFont {
-    hb_font_t* hbFont;
+    hb_font_t* hbFont = nullptr;
     // Note the misnomer here, we call it a "font" to follow harfbuzz's terminology
-    FT_Face* fbFont;
-    ReFaIndex prototypeId;
+    FT_Face ftFont = nullptr;
+    ReFaIndex prototypeId = -1;
     ReFoIndex index = -1;
-    FontSize size;
+    FontSize size = 0;
 };
 
 struct FaceSet {
@@ -127,7 +128,7 @@ struct FaceDescription {
 
 class IFontResolver {
 public:
-    ~IFontResolver() = default;
+    virtual ~IFontResolver() = default;
     virtual std::vector<UnloadedFace> LocateMatchingFaces(const FaceDescription& desc) = 0;
     virtual std::vector<UnloadedFace> LocateAllFaces() = 0;
 };

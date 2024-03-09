@@ -128,7 +128,7 @@ public:
         mFcConf = FcInitLoadConfigAndFonts();
     }
 
-    ~FontConfigResolver() {
+    ~FontConfigResolver() override {
         FcFini();
     }
 

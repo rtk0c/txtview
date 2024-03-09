@@ -97,13 +97,13 @@ int main(int argc, char** argv) {
     }
 
     txtview::TypefaceLibrary libTypeface;
-    txtview::TextLibrary libText(libTypeface);
+    txtview::LayoutCache libText(libTypeface);
     txtview::File inputFile(inputPath);
     txtview::TextDocument doc(inputFile);
 
     struct ProcessedParagraph {
-        txtview::ItemizedParagraph itemization;
-        txtview::ShapedParagraph shaping;
+        // txtview::ParagraphItemization itemization;
+        // txtview::ParagraphShaping shaping;
     };
     std::vector<ProcessedParagraph> paragraphs;
     txtview::Canvas canvas;
@@ -116,9 +116,9 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < paragraphs.size(); ++i) {
         auto& text = doc.paragraphs[i];
         auto& proc = paragraphs[i];
-        txtview::PlacementResult res;
-        libText.ItemizeAndShape(text, proc.itemization, proc.shaping);
-        libText.PlaceShapedParagraph(canvas, proc.shaping, &res, currX, currY, pageWidth, 0.0f);
+        // txtview::PlacementResult res;
+        // libText.ItemizeAndShape(text, proc.itemization, proc.shaping);
+        // libText.PlaceShapedParagraph(canvas, proc.shaping, currX, currY, pageWidth, 0.0f);
     }
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {

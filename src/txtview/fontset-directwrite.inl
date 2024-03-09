@@ -102,7 +102,7 @@ public:
             throw std::runtime_error("Failed to create IDWriteFactory");
     }
 
-    ~DirectWriteResolver() {
+    ~DirectWriteResolver() override {
         SafeRelease(mFactory);
     }
 
