@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 project(txtview LANGUAGES CXX)
 
-find_package(Fontconfig REQUIRED)
+if(UNIX AND NOT APPLE)
+  find_package(Fontconfig REQUIRED)
+endif()
 find_package(Freetype REQUIRED)
 find_package(harfbuzz CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
@@ -34,12 +36,17 @@ PRIVATE
 
 target_link_libraries(txtview
 PRIVATE
-    Fontconfig::Fontconfig
     Freetype::Freetype
     harfbuzz::harfbuzz
     ${SDL2_LIBRARIES}
     tomlplusplus::tomlplusplus
 )
+if(UNIX AND NOT APPLE)
+    target_link_libraries(txtview
+    PRIVATE
+        Fontconfig::Fontconfig
+    )
+endif()
 
 set_target_properties(
     txtview
