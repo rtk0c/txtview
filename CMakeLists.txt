@@ -10,6 +10,8 @@ if(UNIX AND NOT APPLE)
 endif()
 
 # Section: vcpkg libraries
+# If user doesn't want to use vcpkg, simply not provide -DCMAKE_TOOLCHAIN_FILE=/path/vcpkg when configuring.
+# These imports should be compatible with each project's own CMake/PkgConfig files (typically seen shipped in Linux distros)
 find_package(Freetype REQUIRED)
 find_package(harfbuzz CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)

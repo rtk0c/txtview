@@ -6,8 +6,6 @@
 #include <cstdio>
 #include <memory>
 
-#pragma comment(lib, "Dwrite")
-
 // Define `HRESULT hr;` at top of function to use this
 #define TRY_HRESULT(exp) \
     hr = exp;            \
