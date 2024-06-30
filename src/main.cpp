@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
+#include <fstream>
+#include <sstream>
 
-#include <txtview/file.hpp>
 #include <txtview/fontset.hpp>
 #include <txtview/text.hpp>
 
@@ -98,15 +99,18 @@ int main(int argc, char** argv) {
 
     txtview::TypefaceLibrary libTypeface;
     txtview::LayoutCache libText(libTypeface);
-    txtview::File inputFile(inputPath);
-    txtview::TextDocument doc(inputFile);
+    std::ifstream inputFileStream(inputPath);
+    std::stringstream inputFileBuf;
+    inputFileBuf << inputFileStream.rdbuf();
+
+    txtview::TextDocument doc(inputFileBuf.view());
 
     struct ProcessedParagraph {
         // txtview::ParagraphItemization itemization;
         // txtview::ParagraphShaping shaping;
     };
     std::vector<ProcessedParagraph> paragraphs;
-    txtview::Canvas canvas;
+//    txtview::Canvas canvas;
 
     float currX = 0.0f;
     float currY = 0.0f;

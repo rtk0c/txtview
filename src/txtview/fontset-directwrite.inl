@@ -1,7 +1,9 @@
 #include "fontset.hpp"
 
+#include <dwrite.h>
 #include <wrl/client.h>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 
 #pragma comment(lib, "Dwrite")
@@ -11,8 +13,8 @@
     hr = exp;            \
     if (FAILED(hr)) continue
 
-using namespace FontEnum;
 namespace fs = std::filesystem;
+using namespace std::literals;
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -32,11 +34,13 @@ static std::string WcharToUTF8(const wchar_t* src, size_t srcLen) {
     if (srcLen == 0)
         srcLen = wcslen(src);
 
-    int length = WideCharToMultiByte(CP_UTF8, 0, src, srcLen, nullptr, 0, nullptr, nullptr);
+    int length = WideCharToMultiByte(CP_UTF8, 0, src, static_cast<int>(srcLen), nullptr, 0, nullptr, nullptr);
     std::string res(length, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, src, srcLen, res.data(), length, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, src, static_cast<int>(srcLen), res.data(), length, nullptr, nullptr);
     return res;
 }
+
+namespace txtview {
 
 FontStyle DwriteToStyle(DWRITE_FONT_STYLE v) {
     switch (v) {
@@ -76,7 +80,7 @@ FontWeight DwriteToWeight(DWRITE_FONT_WEIGHT v) {
         case DWRITE_FONT_WEIGHT_SEMI_LIGHT: return SemiLight;
         case DWRITE_FONT_WEIGHT_NORMAL: return Normal;
         case DWRITE_FONT_WEIGHT_MEDIUM: return Medium;
-        case DWRITE_FONT_WEIGHT_DEMI_BOLD: return DemiBold;
+        case DWRITE_FONT_WEIGHT_DEMI_BOLD: return SemiBold;
         case DWRITE_FONT_WEIGHT_BOLD: return Bold;
         case DWRITE_FONT_WEIGHT_EXTRA_BOLD: return ExtraBold;
         case DWRITE_FONT_WEIGHT_BLACK: return Black;
@@ -111,7 +115,9 @@ public:
 };
 
 std::vector<UnloadedFace> DirectWriteResolver::LocateMatchingFaces(const FaceDescription& desc) {
+    std::vector<UnloadedFace> result;
     // TODO
+    return result;
 }
 
 std::vector<UnloadedFace> DirectWriteResolver::LocateAllFaces() {
@@ -147,7 +153,7 @@ std::vector<UnloadedFace> DirectWriteResolver::LocateAllFaces() {
             // https://stackoverflow.com/questions/41161152/when-can-an-idwritefontface-have-more-than-one-file
             // According to this, a IDWriteFontFace can never have more than 1 file except in the case of Type 1 fonts which we filter out above already
             if (fontFilesCnt > 1) {
-                fprintf("Warning: IDWriteFont reported more than 1 font file, skipping\n", stdout);
+                std::fputs("Warning: IDWriteFont reported more than 1 font file, skipping\n", stdout);
                 continue;
             }
 
@@ -193,3 +199,5 @@ std::vector<UnloadedFace> DirectWriteResolver::LocateAllFaces() {
 
     return result;
 }
+
+} // namespace txtview

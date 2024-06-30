@@ -3,7 +3,6 @@
 
 #include <txtview/config.h>
 #include <txtview/conversions.h>
-#include <txtview/file.hpp>
 #include <txtview/utils.hpp>
 
 #include <harfbuzz/hb.h>
@@ -113,7 +112,7 @@ void ItemizeParagraphForInvalidCodepoints(const TextParagraph& src, LayoutBuffer
         // A run of HB_CODEPOINT_INVALID that should be broken up for shaping
         uint32_t subrunBegin = kInvalid;
         uint32_t subrunEnd = kInvalid;
-        for (size_t i = 0; i < run.glyphs.size(); ++i) {
+        for (uint32_t i = 0; i < run.glyphs.size(); ++i) {
             auto& [glyphInfo, _] = run.glyphs[i];
 
             if (glyphInfo.glyphIndex != HB_CODEPOINT_INVALID)

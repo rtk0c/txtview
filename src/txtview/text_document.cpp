@@ -6,8 +6,7 @@ using namespace std::literals;
 
 namespace txtview {
 
-TextDocument::TextDocument(const File& file) {
-    std::string_view content(file.content, file.length);
+TextDocument::TextDocument(std::string_view content) {
     // TODO this doesn't handle if a paragraph is at the beginning of a file
     constexpr auto kPrefix = "\n\u3000\u3000"sv;
     constexpr auto kSuffix = "\n"sv;

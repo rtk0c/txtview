@@ -1,6 +1,5 @@
 #pragma once
 
-#include <txtview/file.hpp>
 #include <txtview/fontset.hpp>
 #include <txtview/measurement.hpp>
 
@@ -33,7 +32,7 @@ struct TextDocument {
     // std::vector<std::vector<TextSection>> groupings;
     std::vector<TextParagraph> paragraphs;
 
-    TextDocument(const File& file);
+    TextDocument(std::string_view content);
 };
 
 /*

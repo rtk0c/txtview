@@ -12,7 +12,7 @@ inline void HashCombineObj(size_t& seed, const T& v) {
 
 template <typename T>
 struct MemberHash {
-    size_t operator()(const T& t) { return t.HashCode(); }
+    size_t operator()(const T& t) const { return t.HashCode(); }
 };
 
 // TODO consider switching to boost::unordered_flat_map? or ankerl::unordered_dense::?

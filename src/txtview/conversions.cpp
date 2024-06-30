@@ -173,7 +173,8 @@ uint8_t HbScriptCompress(hb_script_t script) {
 
         case _HB_SCRIPT_MAX_VALUE: break;
     }
-    assert(false && "HbScriptCompress(): nvalid enum value");
+    assert(false && "HbScriptCompress(): invalid enum value");
+    return 0xFF;
 }
 
 static const hb_script_t kHbScriptUncompressLut[] = {

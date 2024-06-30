@@ -83,11 +83,11 @@ std::string UnloadedFace::ToString() const {
 }
 
 ResidentFont& TypefaceLibrary::GetFont(ReFoIndex fontId) {
-    // TODO
+    return fonts[fontId];
 }
 
 ResidentFace& TypefaceLibrary::GetFace(ReFaIndex faceId) {
-    // TODO
+    return universe[faceId];
 }
 
 FontSet TypefaceLibrary::AddFonts(const FaceSet& faces, FontSize size) {
@@ -111,7 +111,7 @@ FaceSet TypefaceLibrary::AddFaces(std::span<const UnloadedFace> faces) {
 #else
         auto utf8path = path.c_str();
 #endif
-        auto [iter, _] = blobs.try_emplace(key, hb_blob_create_from_file(key));
+        auto [iter, _] = blobs.try_emplace(key, hb_blob_create_from_file(utf8path));
         return iter->second;
     };
 
