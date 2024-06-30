@@ -1,16 +1,23 @@
 cmake_minimum_required(VERSION 3.13)
 project(txtview LANGUAGES CXX)
 
+# Load PkgConfig
+find_package(PkgConfig REQUIRED)
+
+# Section: platform libraries
 if(UNIX AND NOT APPLE)
   find_package(Fontconfig REQUIRED)
 endif()
+
+# Section: vcpkg libraries
 find_package(Freetype REQUIRED)
 find_package(harfbuzz CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
-find_package(tomlplusplus CONFIG REQUIRED)
+pkg_check_modules(tomlplusplus REQUIRED IMPORTED_TARGET tomlplusplus)
 
 file(GLOB_RECURSE txtview_SRC_FILES
-    src/*.c src/*.cpp src/*.cpp2
+    src/*.c
+    src/*.cpp
 )
 add_executable(txtview ${txtview_SRC_FILES})
 
@@ -39,9 +46,14 @@ PRIVATE
     Freetype::Freetype
     harfbuzz::harfbuzz
     ${SDL2_LIBRARIES}
-    tomlplusplus::tomlplusplus
+    PkgConfig::tomlplusplus
 )
-if(UNIX AND NOT APPLE)
+if(WIN32)
+    target_link_libraries(txtview
+    PRIVATE
+        Dwrite
+    )
+elseif(UNIX AND NOT APPLE)
     target_link_libraries(txtview
     PRIVATE
         Fontconfig::Fontconfig

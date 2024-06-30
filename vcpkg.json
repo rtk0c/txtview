@@ -1,0 +1,10 @@
+{
+  "name": "txtview",
+  "version": "0.1.0",
+  "dependencies": [
+    "freetype",
+    "harfbuzz",
+    "sdl2",
+    "tomlplusplus"
+  ]
+}
